@@ -44,7 +44,7 @@ public class Main {
         }
 
         if (args.length == 2) {
-            run(instance, args[1], 0.5);
+            run(instance, args[1]);
         } else if (args.length == 3 || args.length == 4) {
             generate(instance, args[1], args[2], args.length != 4);
         } else {
@@ -83,6 +83,7 @@ public class Main {
      * @param instance Same as for run().
      * @param trPath Training set path.
      * @param testPath Test set path.
+     * @param noisy If true, it prints progress on stderr.
      */
     public static void generate(Run instance, String trPath, String testPath, boolean noisy) throws Exception {
         GroupedDataset<String, VFSListDataset<FImage>, FImage> dataset = new VFSGroupDataset<FImage>(trPath, ImageUtilities.FIMAGE_READER);
@@ -136,7 +137,7 @@ public class Main {
      * @param path Path to the dataset.
      * @throws Exception Any IO exception from reading the datasets.
      */
-    public static void run(Run instance, String path, double percentage) throws Exception {
+    public static void run(Run instance, String path) throws Exception {
         GroupedDataset<String, VFSListDataset<FImage>, FImage> dataset = new VFSGroupDataset<FImage>(path, ImageUtilities.FIMAGE_READER);
 
         // Sample all data so we have a GroupedDataset<String, ListDataset<FImage>, FImage>, and not a group with a VFSListDataset.
