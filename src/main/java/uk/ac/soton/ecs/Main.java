@@ -22,8 +22,18 @@ import uk.ac.soton.ecs.run2.LinearClassifier;
 
 public class Main {
 
+    /**
+     * Can be run with 2 or three arguments, depending on expected behaviour.
+     * To run for evaluation:
+     *      Main <run id> <training test path>
+     *
+     * To run for submission file generation:
+     *      Main <run id> <training test path> <test set path> [quiet]
+     *
+     *      Progress is written on stderr and Output on stdout if the last parameters is not given.
+     */
     public static void main(String[] args) throws Exception {
-        if (args.length != 2) {
+        if (args.length < 2) {
             System.err.println("Need at least 2 arguments. Run with: <run id> <path to dataset>");
             return;
         }
@@ -33,7 +43,13 @@ public class Main {
             return;
         }
 
-        run(instance, args[1], 0.5);
+        if (args.length == 2) {
+            run(instance, args[1], 0.5);
+        } else if (args.length == 3 || args.length == 4) {
+            generate(instance, args[1], args[2], args.length != 4);
+        } else {
+            System.err.println("Wrong arguments.");
+        }
     }
 
     /**
@@ -55,6 +71,62 @@ public class Main {
         //     return new run1.Run1();
         // }
         return null;
+    }
+
+    /**
+     * Generating the submission prediction files.
+     * To run this, run: Main <run-id> <training-path> <test-path> > output.txt
+     *
+     * It writes progess status on the Standard Error and the output on Standard Output,
+     * thus output redirection is your friend.
+     *
+     * @param instance Same as for run().
+     * @param trPath Training set path.
+     * @param testPath Test set path.
+     */
+    public static void generate(Run instance, String trPath, String testPath, boolean noisy) throws Exception {
+        GroupedDataset<String, VFSListDataset<FImage>, FImage> dataset = new VFSGroupDataset<FImage>(trPath, ImageUtilities.FIMAGE_READER);
+
+        // Sample all data so we have a GroupedDataset<String, ListDataset<FImage>, FImage>, and not a group with a VFSListDataset.
+        GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(dataset, dataset.size(), false);
+        
+        // Loading test dataset
+        VFSListDataset<FImage> testSet = new VFSListDataset<FImage>(testPath, ImageUtilities.FIMAGE_READER);
+        if (testSet == null) {
+            System.err.println("Error loading trainig set.");
+            return;
+        }
+        int size = 0;
+
+        // weird NullPointerException when checking size if the path is wrong.
+        try {
+            size = testSet.size();
+        } catch (NullPointerException e) {
+            System.err.println("Error. Test path probably wrong. Check " + testPath);
+            return;
+        }
+
+        if (noisy) System.err.println("Training dataset loaded. Staring training...");
+        instance.train(data);
+
+        if (noisy) System.err.println("Training complete. Now predicting... (progress on stderr, output on stout)");
+        for (int j=0;j<size;j++) {
+            FImage img = testSet.get(j);
+            String file = testSet.getID(j);
+
+            ClassificationResult<String> predicted = instance.classify(img);
+            String[] classes = predicted.getPredictedClasses().toArray(new String[]{});
+
+            if (noisy) {
+                System.out.print(file); System.out.print(" ");
+                for (String cls : classes) {
+                    System.out.print(cls); System.out.print(" ");
+                }
+                System.out.println();
+                System.err.print("\r " + Math.round((j+1)*100.0/size) + " %  ");
+            }
+        } 
+        if (noisy) System.err.println("\n Done.");
     }
 
     /**
