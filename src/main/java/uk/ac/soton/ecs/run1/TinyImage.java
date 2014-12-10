@@ -1,4 +1,5 @@
 package uk.ac.soton.ecs.run1;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,6 +24,7 @@ import org.openimaj.util.array.ArrayUtils;
 import org.openimaj.util.pair.IntDoublePair;
 import org.openimaj.util.pair.IntFloatPair;
 
+import uk.ac.soton.ecs.Normalisation;
 import uk.ac.soton.ecs.Main;
 import uk.ac.soton.ecs.Run;
 import uk.ac.soton.ecs.run2.LinearClassifier;
@@ -36,12 +38,14 @@ public class TinyImage implements Run {
 	private static final int SQUARE_SIZE = 16;
 	
 	private DoubleNearestNeighboursExact knn;
-	
+
+    // Normalisation parameters
+    private Normalisation norm;
+
 	//The training feature vectors
 	private List<double[]> featureVectors;
 	//The classes of the training feature vectors (array indices correspond to featureVector indices)
 	private List<String> classes;
-	
 	
 	public static void main(String[] args) throws Exception{
 		TinyImage hello = new TinyImage();
@@ -70,27 +74,20 @@ public class TinyImage implements Run {
 				//Add feature vector and class to database
 				featureVectors.add(featureVector);
 				classes.add(group);
-				
 			}
 			
 		}
-
-
-		
 		
 		//Array of all feature vectors
 		double[][] vectors = featureVectors.toArray(new double[][]{});
-		
-		zeroMean(vectors);
+
+        // normalise
+        norm = Normalisation.normalise(vectors);
 		
 		//New knn with training feature vectors
 		knn = new DoubleNearestNeighboursExact(vectors);
 	}
 	
-	private void zeroMean(double[][] data){
-		//TODO: zero mean & unit length
-	}
-
 	/**
 	 * Return guess of image class
 	 */
@@ -99,7 +96,9 @@ public class TinyImage implements Run {
 		//Extract feature vector for image
 		VectorExtractor ve = new VectorExtractor();
 		double[] featureVector = ve.extractFeature(image).values;
-		
+	    
+        norm.normaliseNewItem(featureVector);
+
 		//Find k nearest neighbours
 		List<IntDoublePair> neighbours = knn.searchKNN(featureVector, K);
 		
