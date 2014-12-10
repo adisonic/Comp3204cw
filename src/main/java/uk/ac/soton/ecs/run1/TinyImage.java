@@ -32,7 +32,7 @@ import uk.ac.soton.ecs.run2.LinearClassifier;
 public class TinyImage implements Run {
 	
 	//Number of nearest neighbours to considers
-	private static final int K = 5;
+	private static final int K = 15;
 	//Dimension of tiny image
 	private static final int SQUARE_SIZE = 16;
 	
@@ -55,34 +55,27 @@ public class TinyImage implements Run {
 	 * Train classifier
 	 */
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-		
 		classes = new ArrayList<String>();
 		featureVectors = new ArrayList<double[]>();
 		
 		VectorExtractor ve = new VectorExtractor();
 		//For each image in each class
-		
+        
 		for(String group : trainingSet.getGroups()){
-		
 			for(FImage image : trainingSet.get(group)){
-				//Extract feature vector
-				DoubleFV fv = ve.extractFeature(image);
-				double[] featureVector = fv.values;
-				//float[] featureVector = ve.extractFeature(image).values;
-				
-				//Add feature vector and class to database
-				featureVectors.add(featureVector);
+				// Extract feature vector
+                DoubleFV fvobj = ve.extractFeature(image);
+                fvobj.normaliseFV();
+				double[] fv = fvobj.values;
+
+				featureVectors.add(fv);
 				classes.add(group);
 			}
-			
 		}
-		
+    
 		//Array of all feature vectors
 		double[][] vectors = featureVectors.toArray(new double[][]{});
 
-        // normalise
-        norm = Normalisation.normalise(vectors);
-		
 		//New knn with training feature vectors
 		knn = new DoubleNearestNeighboursExact(vectors);
 	}
@@ -94,9 +87,9 @@ public class TinyImage implements Run {
 		
 		//Extract feature vector for image
 		VectorExtractor ve = new VectorExtractor();
-		double[] featureVector = ve.extractFeature(image).values;
-	    
-        norm.normaliseNewItem(featureVector);
+        DoubleFV fv = ve.extractFeature(image);
+        fv.normaliseFV();
+		double[] featureVector = fv.values;
 
 		//Find k nearest neighbours
 		List<IntDoublePair> neighbours = knn.searchKNN(featureVector, K);
@@ -158,8 +151,7 @@ public class TinyImage implements Run {
 			FImage small = center.process(new ResizeProcessor(SQUARE_SIZE, SQUARE_SIZE));
 			
 			//2D array to 1D vector
-			double[] vector = ArrayUtils.reshape(ArrayUtils.convertToDouble(small.pixels));
-			return new DoubleFV(vector);
+			return new DoubleFV(ArrayUtils.reshape(ArrayUtils.convertToDouble(small.pixels)));
 		}
 		
 	}
