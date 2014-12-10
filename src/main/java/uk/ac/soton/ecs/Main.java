@@ -10,8 +10,13 @@ import org.openimaj.data.dataset.VFSGroupDataset;
 import org.openimaj.data.dataset.VFSListDataset;
 import org.openimaj.experiment.dataset.sampling.GroupSampler;
 import org.openimaj.experiment.dataset.split.GroupedRandomSplitter;
+import org.openimaj.experiment.evaluation.classification.ClassificationEvaluator;
+import org.openimaj.experiment.evaluation.classification.ClassificationResult;
+import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMResult;
+import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMAnalyser;
 import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
+
 
 import uk.ac.soton.ecs.run1.TinyImage;
 
@@ -81,21 +86,13 @@ public class Main {
         // training
         instance.train(training);
         
-        // evaluating
-        int correct = 0;
-        int total = 0;
-        for (Map.Entry<String,ListDataset<FImage>> e : test.entrySet()) {
-            String real = e.getKey();
-            ListDataset<FImage> ld = e.getValue();
-            for (FImage img : ld) {
-                Set<String> predicted = instance.classify(img).getPredictedClasses();
-                if (predicted.contains(real)) {
-                    correct++;
-                }
-                total++;
-            }
-        }
+        // OpenIMAJ evaluation method.
+        ClassificationEvaluator<CMResult<String>, String, FImage> evaluator =
+            new ClassificationEvaluator<CMResult<String>, String, FImage>(instance, test, new CMAnalyser<FImage, String>(CMAnalyser.Strategy.SINGLE));
 
-        System.out.println("Correctly classified " + correct + " out of " + total + " (" +((float)correct*100f/total)+"%).");
+        Map<FImage, ClassificationResult<String>> guesses = evaluator.evaluate();
+        CMResult<String> result = evaluator.analyse(guesses);
+
+        System.out.println(result.getDetailReport());
     }
 }
