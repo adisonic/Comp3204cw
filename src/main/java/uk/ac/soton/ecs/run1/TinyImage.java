@@ -3,31 +3,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.vfs2.FileSystemException;
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
-import org.openimaj.data.dataset.VFSGroupDataset;
-import org.openimaj.experiment.dataset.split.GroupedRandomSplitter;
 import org.openimaj.feature.FeatureExtractor;
 import org.openimaj.feature.FloatFV;
-import org.openimaj.feature.FloatFVComparison;
-import org.openimaj.image.DisplayUtilities;
 import org.openimaj.image.FImage;
-import org.openimaj.image.ImageUtilities;
-import org.openimaj.image.MBFImage;
 import org.openimaj.image.processing.resize.ResizeProcessor;
-import org.openimaj.knn.FloatNearestNeighbours;
 import org.openimaj.knn.FloatNearestNeighboursExact;
-import org.openimaj.knn.ObjectNearestNeighboursExact;
-import org.openimaj.ml.annotation.ScoredAnnotation;
-import org.openimaj.ml.annotation.basic.KNNAnnotator;
-import org.openimaj.ml.clustering.assignment.soft.FloatKNNAssigner;
-import org.openimaj.ml.clustering.kmeans.FloatKMeans;
 import org.openimaj.util.array.ArrayUtils;
 import org.openimaj.util.pair.IntFloatPair;
 
@@ -123,7 +109,10 @@ public class TinyImage implements Run {
 			}
 		});
 		
-		//Guessed class if first in list
+		//Confidence in result
+		double confidence = guessList.get(0).getValue().doubleValue() / (double) K;
+		
+		//Guessed class is first in list
 		String guessedClass = guessList.get(0).getKey();
 		
 		return guessedClass;
@@ -135,7 +124,7 @@ public class TinyImage implements Run {
 	class VectorExtractor implements FeatureExtractor<FloatFV,FImage>{
 
 		public FloatFV extractFeature(FImage image) {
-			//Smallest dimension of image is the size of the square
+			//Smallest dimension of image is the biggest the square can be
 			int size = Math.min(image.width, image.height);
 			//Extract the square from centre
 			FImage center = image.extractCenter(size, size);
