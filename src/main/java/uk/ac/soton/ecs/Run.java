@@ -7,7 +7,7 @@ import org.openimaj.image.annotation.evaluation.datasets.Caltech101.Record;
 
 public interface Run {
 	
-	public void train(GroupedDataset<String, ListDataset<Record<FImage>>, Record<FImage>> trainingSet);
+	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet);
 	
 	public String classify(FImage image);
 
