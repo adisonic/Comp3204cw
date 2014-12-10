@@ -49,12 +49,12 @@ import uk.ac.soton.ecs.Main;
 public class LinearClassifier implements Run {
 
     // Clustering parameters
-    public static int MAXFEATURES = 20000;
     public static int CLUSTERS = 600;
+    public static int IMAGES_FOR_VOCABULARY = 3;
 
     // Patch parameters
-	public static float STEP = 6;
-	public static float PATCH_SIZE = 8;
+	public static float STEP = 8;
+	public static float PATCH_SIZE = 16;
 
 	private LiblinearAnnotator<FImage, String> ann;
 
@@ -65,7 +65,9 @@ public class LinearClassifier implements Run {
 
 	@Override
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-		HardAssigner<float[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet);
+        // build vocabulary using images from all classes.
+        GroupedRandomSplitter<String, FImage> rndspl = new GroupedRandomSplitter<String, FImage>(trainingSet, IMAGES_FOR_VOCABULARY, 0, 0);
+		HardAssigner<float[], float[], IntFloatPair> assigner = trainQuantiser(rndspl.getTrainingDataset());
 	
 		FeatureExtractor<DoubleFV, FImage> extractor = new PatchClusterFeatureExtractor(assigner);
 
@@ -96,13 +98,7 @@ public class LinearClassifier implements Run {
 				allkeys.add(lf.getFeatureVector().values);
 			}
 		}
-		
-		Collections.shuffle(allkeys);
 	
-        // limit the number of patches to use
-		if (allkeys.size() > MAXFEATURES) 
-			allkeys = allkeys.subList(0, MAXFEATURES);
-
 		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(CLUSTERS);
 		System.out.println("cluster");
 		
