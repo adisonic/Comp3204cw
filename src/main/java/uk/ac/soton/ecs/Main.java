@@ -147,12 +147,13 @@ public class Main {
         Iterator<String> groupsIter = data.getGroups().iterator();
         if (!groupsIter.hasNext()) {
             throw new Exception("The dataset loaded has no classes.");
-        }        
+        }
+
         String grp = groupsIter.next();
-//        int imagesInGroup = data.get(grp).size();
-        int imagesInGroup = 2;
+        int imagesInGroup = data.get(grp).size();
+//        int imagesInGroup = 2;
         // Split into test and training datasets.
-        GroupedRandomSplitter<String, FImage> splitter = new GroupedRandomSplitter<String, FImage>(data, 10, 0, 30);
+        GroupedRandomSplitter<String, FImage> splitter = new GroupedRandomSplitter<String, FImage>(data, imagesInGroup/2, 0, imagesInGroup/2);
         GroupedDataset<String, ListDataset<FImage>, FImage> training = splitter.getTrainingDataset();
         GroupedDataset<String, ListDataset<FImage>, FImage> test = splitter.getTestDataset();
 
