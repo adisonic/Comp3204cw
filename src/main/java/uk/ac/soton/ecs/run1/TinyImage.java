@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
+import org.openimaj.experiment.evaluation.classification.BasicClassificationResult;
 import org.openimaj.feature.FeatureExtractor;
 import org.openimaj.feature.FloatFV;
 import org.openimaj.image.FImage;
@@ -72,7 +73,7 @@ public class TinyImage implements Run {
 	/**
 	 * Return guess of image class
 	 */
-	public String classify(FImage image) {
+	public BasicClassificationResult<String> classify(FImage image) {
 		
 		//Extract feature vector for image
 		VectorExtractor ve = new VectorExtractor();
@@ -114,8 +115,11 @@ public class TinyImage implements Run {
 		
 		//Guessed class is first in list
 		String guessedClass = guessList.get(0).getKey();
-		
-		return guessedClass;
+	
+        BasicClassificationResult<String> result = new BasicClassificationResult<String>();
+        result.put(guessedClass, confidence);
+
+		return result;
 	}
 	
 	/** 
