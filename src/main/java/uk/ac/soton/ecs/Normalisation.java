@@ -1,5 +1,12 @@
 package uk.ac.soton.ecs;
 
+/**
+ * This class scales the features of a matrix represented as double[][] by columns.
+ * 
+ * Scaling to unit standard deviation and zero mean. The class remembers the standard
+ * deviation and mean used to normalise and offers relevant getters and a convenience
+ * method that normalises new vectors.
+ */
 public class Normalisation {
     private double[] stdev;
     private double[] mean;
@@ -10,7 +17,8 @@ public class Normalisation {
      *
      * The matrix is [row][colum] and it is normalised by each column.
      *
-     * Will throw run-time errors if the matrix given is empty.
+     * Will throw run-time errors if the matrix given is empty or the rows
+     * are not of equal sizes.
      *
      * @param matrix Matrix to normalise.
      */
@@ -55,6 +63,10 @@ public class Normalisation {
         return ret;
     }
 
+    /**
+     * The constructor is private because you never need to instantiate
+     * this class unless you normalise a matrix by the normalise() method.
+     */
     private Normalisation(double[] stdev, double[] mean) {
         this.stdev = stdev;
         this.mean = mean;

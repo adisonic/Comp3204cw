@@ -29,7 +29,6 @@ import uk.ac.soton.ecs.Main;
 import uk.ac.soton.ecs.Run;
 import uk.ac.soton.ecs.run2.LinearClassifier;
 
-
 public class TinyImage implements Run {
 	
 	//Number of nearest neighbours to considers
