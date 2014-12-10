@@ -2,6 +2,7 @@ package uk.ac.soton.ecs;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
