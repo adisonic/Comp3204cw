@@ -3,7 +3,8 @@ package uk.ac.soton.ecs;
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
 import org.openimaj.image.FImage;
-
+import org.openimaj.experiment.evaluation.classification.ClassificationResult;
+import org.openimaj.experiment.evaluation.classification.BasicClassificationResult;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -18,12 +19,16 @@ public class RandomRun implements Run {
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
         classes.addAll(trainingSet.keySet());
     }
+
     /**
      * Randomly return a class.
      * @param image Completely ignored parameter, required to implement interface.
      */
-	public String classify(FImage image) {
-        return classes.get(rnd.nextInt(classes.size()));
+	public BasicClassificationResult<String> classify(FImage image) {
+        String cls = classes.get(rnd.nextInt(classes.size()));
+        BasicClassificationResult<String> result = new BasicClassificationResult<String>();
+        result.put(cls,1.0);
+        return result;
     }
 }
 

@@ -86,8 +86,8 @@ public class Main {
             String real = e.getKey();
             ListDataset<FImage> ld = e.getValue();
             for (FImage img : ld) {
-                String predicted = instance.classify(img);
-                if (predicted.equals(real)) {
+                Set<String> predicted = instance.classify(img).getPredictedClasses();
+                if (predicted.contains(real)) {
                     correct++;
                 }
                 total++;
