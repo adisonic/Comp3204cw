@@ -3,13 +3,13 @@ package uk.ac.soton.ecs;
 import org.openimaj.data.dataset.*;
 import org.openimaj.experiment.dataset.split.GroupedRandomSplitter;
 import org.openimaj.experiment.dataset.sampling.GroupSampler;
-import org.openimaj.experiment.validation.GroupedRandomisedPercentageHoldOut;
 
 import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
 
 import java.util.Set;
 import java.util.Map;
+import java.util.Iterator;
 
 public class Main {
 
@@ -51,29 +51,25 @@ public class Main {
      */
     public static void run(Run instance, String path, double percentage) throws Exception {
         GroupedDataset<String, VFSListDataset<FImage>, FImage> dataset = new VFSGroupDataset<FImage>(path, ImageUtilities.FIMAGE_READER);
+
+        // Sample all data so we have a GroupedDataset<String, ListDataset<FImage>, FImage>, and not a group with a VFSListDataset.
         GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(dataset, dataset.size(), false);
 
-        System.out.println("data = " + data.size());
-        System.out.println("classes = "+ dataset.size());
-        int imgs=0;
-        Set<Map.Entry<String, ListDataset<FImage>>> s = data.entrySet();
-        for (Map.Entry<String, ListDataset<FImage>> i : s) {
-            System.out.println("For class " + i.getKey());
-            ListDataset<FImage> ld = i.getValue();
-            for (FImage img : ld) {
-                imgs++;
-            }
-        }
-        System.out.println("has image = "+ imgs);
+        // Number of images in the first group. (since groups are roughly equal)
+        Iterator<String> groupsIter = data.getGroups().iterator();
+        if (!groupsIter.hasNext()) {
+            throw new Exception("The dataset loaded has no classes.");
+        }        
+        String grp = groupsIter.next();
+        int imagesInGroup = data.get(grp).size();
 
-        int f = 10;
-        GroupedRandomSplitter<String, FImage> splitter = new GroupedRandomSplitter<String, FImage>(data, f, 0, f);
+        // Split into test and training datasets.
+        GroupedRandomSplitter<String, FImage> splitter = new GroupedRandomSplitter<String, FImage>(data, imagesInGroup/2, 0, imagesInGroup/2);
         GroupedDataset<String, ListDataset<FImage>, FImage> training = splitter.getTrainingDataset();
-        GroupedDataset<String, ListDataset<FImage>, FImage> test = splitter.getValidationDataset();
+        GroupedDataset<String, ListDataset<FImage>, FImage> test = splitter.getTestDataset();
 
-        int testPoints = test.size();
-        System.out.println("Test points = " + test.size());
-        System.out.println("Training points = " + training.size());
+        System.out.println("Test set size = " + test.size());
+        System.out.println("Training set size = " + training.size());
 
         // training
         instance.train(training);
@@ -82,10 +78,8 @@ public class Main {
         int correct = 0;
         int total = 0;
         for (Map.Entry<String,ListDataset<FImage>> e : test.entrySet()) {
-            System.out.println("testing..." + e.getKey());
             String real = e.getKey();
             ListDataset<FImage> ld = e.getValue();
-            System.out.println("Found images here: " + ld.size());
             for (FImage img : ld) {
                 String predicted = instance.classify(img);
                 if (predicted.equals(real)) {
