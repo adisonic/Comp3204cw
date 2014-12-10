@@ -109,7 +109,10 @@ public class TinyImage implements Run {
 			}
 		});
 		
-		//Guessed class if first in list
+		//Confidence in result
+		double confidence = guessList.get(0).getValue().doubleValue() / (double) K;
+		
+		//Guessed class is first in list
 		String guessedClass = guessList.get(0).getKey();
 		
 		return guessedClass;
@@ -121,7 +124,7 @@ public class TinyImage implements Run {
 	class VectorExtractor implements FeatureExtractor<FloatFV,FImage>{
 
 		public FloatFV extractFeature(FImage image) {
-			//Smallest dimension of image is the size of the square
+			//Smallest dimension of image is the biggest the square can be
 			int size = Math.min(image.width, image.height);
 			//Extract the square from centre
 			FImage center = image.extractCenter(size, size);
