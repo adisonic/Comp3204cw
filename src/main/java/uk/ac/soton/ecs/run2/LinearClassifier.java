@@ -1,6 +1,7 @@
 package uk.ac.soton.ecs.run2;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.vfs2.FileSystemException;
@@ -51,38 +52,18 @@ public class LinearClassifier implements Run{
 	private LiblinearAnnotator<FImage, String> ann;
 
 	public static void main(String[] args) throws Exception{
-		
-		
-//		VFSGroupDataset<FImage> trainingSet = new VFSGroupDataset<FImage>("zip:D:/training.zip", ImageUtilities.FIMAGE_READER);
-//		GroupedRandomSplitter<String, FImage> splits =  new GroupedRandomSplitter<String, FImage>(trainingSet, 4, 0, 4);
-////
-//				GroupedDataset<String, ListDataset<FImage>, FImage> training = splits.getTrainingDataset();
-//		
 		LinearClassifier hello = new LinearClassifier();
-		Main.run(hello, "zip:D:/training.zip", 0.1);
-		//hello.train(training);
-//		FImage tempimage = training.getRandomInstance();
-//		PatchExtractor pe = new PatchExtractor();
-//		pe.extract(tempimage);
-//		
-//		DisplayUtilities.display(tempimage);
-//		System.out.println(hello.classify(tempimage).toString());
+		Main.run(hello, "zip:/Users/Tom/Desktop/training.zip");
 	}
 	@Override
-	public void train(
-			GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-		
-
-		
-		
+	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
 	
 		HardAssigner<float[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet);
 	
 		FeatureExtractor<DoubleFV, FImage> extractor = new PHOWExtractor(assigner);
 
 		System.out.println("liblinerannotatotr");
-		ann = new LiblinearAnnotator<FImage, String>(
-					extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
+		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
 		System.out.println("about to train");
 		ann.train(trainingSet); //not working
 			
@@ -103,21 +84,23 @@ public class LinearClassifier implements Run{
 
 	
 		for (FImage image : sample) {
-			//FImage img = rec.getImage();
+
 			List<LocalFeature<SpatialLocation, FloatFV>> sampleList = PatchExtractor.extract(image);
-			//pdsift.analyseImage(rec);
+			System.out.println(sampleList.size());
+
 			for(LocalFeature<SpatialLocation, FloatFV> lf : sampleList){
 				allkeys.add(lf.getFeatureVector().values);
 			}
 			
 		}
 		
+		Collections.shuffle(allkeys);
 		
 
-		if (allkeys.size() > 10000) 
-			allkeys = allkeys.subList(0, 10000);
+		if (allkeys.size() > 20000) 
+			allkeys = allkeys.subList(0, 20000);
 
-		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(500); //trying out 500 to start with
+		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(600); //trying out 500 to start with
 		System.out.println("cluster");
 		
 		float[][] data = allkeys.toArray(new float[allkeys.size()][]);
@@ -130,7 +113,7 @@ public class LinearClassifier implements Run{
 	
 	static class PatchExtractor{
 		
-		private static final float STEP = 4;
+		private static final float STEP = 6;
 		private static final float PATCH_SIZE = 8;
 		
 		static public List<LocalFeature<SpatialLocation, FloatFV>> extract(FImage image){
@@ -146,10 +129,7 @@ public class LinearClassifier implements Run{
 				areaList.add(lf);
 			
 			}
-			
-			
-			return areaList;
-			
+			return areaList;	
 		}
 		
 		
@@ -167,11 +147,8 @@ public class LinearClassifier implements Run{
 		}
 
 		public DoubleFV extractFeature(FImage image) {
-
 			BagOfVisualWords<float[]> bovw = new BagOfVisualWords<float[]>(assigner);
-
-			BlockSpatialAggregator<float[], SparseIntFV> spatial = new BlockSpatialAggregator<float[], SparseIntFV>(
-					bovw, 2, 2);
+			BlockSpatialAggregator<float[], SparseIntFV> spatial = new BlockSpatialAggregator<float[], SparseIntFV>(bovw, 2, 2);
 			return spatial.aggregate(PatchExtractor.extract(image), image.getBounds()).normaliseFV();
 		}
 	}

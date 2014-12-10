@@ -150,7 +150,7 @@ public class Main {
         }        
         String grp = groupsIter.next();
 //        int imagesInGroup = data.get(grp).size();
-        int imagesInGroup = 10;
+        int imagesInGroup = 2;
         // Split into test and training datasets.
         GroupedRandomSplitter<String, FImage> splitter = new GroupedRandomSplitter<String, FImage>(data, 10, 0, 30);
         GroupedDataset<String, ListDataset<FImage>, FImage> training = splitter.getTrainingDataset();
