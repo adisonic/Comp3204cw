@@ -99,14 +99,17 @@ public class LinearClassifier implements Run{
 	static HardAssigner<float[], float[], IntFloatPair> trainQuantiser(
 			Dataset<FImage> sample)
 			{
-		List<List<LocalFeature<SpatialLocation, FloatFV>>> allkeys = new ArrayList<List<LocalFeature<SpatialLocation, FloatFV>>>();
+		List<float[]> allkeys = new ArrayList<float[]>();
 
-		
+	
 		for (FImage image : sample) {
 			//FImage img = rec.getImage();
 			List<LocalFeature<SpatialLocation, FloatFV>> sampleList = PatchExtractor.extract(image);
 			//pdsift.analyseImage(rec);
-			allkeys.add(sampleList);
+			for(LocalFeature<SpatialLocation, FloatFV> lf : sampleList){
+				allkeys.add(lf.getFeatureVector().values);
+			}
+			
 		}
 		
 		
@@ -116,19 +119,10 @@ public class LinearClassifier implements Run{
 
 		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(500); //trying out 500 to start with
 		System.out.println("cluster");
-		DataSource<float[]> datasource = new AbstractMultiListDataSource<float[],LocalFeature<SpatialLocation, FloatFV>>(allkeys){
-			public int numDimensions() {
-
-				return 2;
-			}
-
-			@Override
-			protected float[] convert(LocalFeature<SpatialLocation, FloatFV> ele) {
-				return ele.getFeatureVector().values;
-			}
-			
-		};
-		FloatCentroidsResult result = km.cluster(datasource);
+		
+		float[][] data = allkeys.toArray(new float[allkeys.size()][]);
+		
+		FloatCentroidsResult result = km.cluster(data);
 		return result.defaultHardAssigner();
 	}
 	
