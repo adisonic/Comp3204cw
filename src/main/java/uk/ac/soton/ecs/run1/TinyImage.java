@@ -10,15 +10,22 @@ import java.util.Map.Entry;
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
 import org.openimaj.experiment.evaluation.classification.BasicClassificationResult;
+import org.openimaj.feature.DoubleFV;
 import org.openimaj.feature.FeatureExtractor;
 import org.openimaj.feature.FloatFV;
+import org.openimaj.image.DisplayUtilities;
 import org.openimaj.image.FImage;
 import org.openimaj.image.processing.resize.ResizeProcessor;
+import org.openimaj.knn.DoubleNearestNeighboursExact;
 import org.openimaj.knn.FloatNearestNeighboursExact;
+import org.openimaj.rdf.serialize.SysOutRDFSerializer;
 import org.openimaj.util.array.ArrayUtils;
+import org.openimaj.util.pair.IntDoublePair;
 import org.openimaj.util.pair.IntFloatPair;
 
+import uk.ac.soton.ecs.Main;
 import uk.ac.soton.ecs.Run;
+import uk.ac.soton.ecs.run2.LinearClassifier;
 
 
 public class TinyImage implements Run {
@@ -28,13 +35,18 @@ public class TinyImage implements Run {
 	//Dimension of tiny image
 	private static final int SQUARE_SIZE = 16;
 	
-	private FloatNearestNeighboursExact knn;
+	private DoubleNearestNeighboursExact knn;
 	
 	//The training feature vectors
-	private List<float[]> featureVectors;
+	private List<double[]> featureVectors;
 	//The classes of the training feature vectors (array indices correspond to featureVector indices)
 	private List<String> classes;
 	
+	
+	public static void main(String[] args) throws Exception{
+		TinyImage hello = new TinyImage();
+		Main.run(hello, "zip:D:/training.zip");
+	}
 	
 	/**
 	 * Train classifier
@@ -42,31 +54,40 @@ public class TinyImage implements Run {
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
 		
 		classes = new ArrayList<String>();
-		featureVectors = new ArrayList<float[]>();
+		featureVectors = new ArrayList<double[]>();
 		
 		VectorExtractor ve = new VectorExtractor();
 		//For each image in each class
+		
 		for(String group : trainingSet.getGroups()){
+		
 			for(FImage image : trainingSet.get(group)){
 				//Extract feature vector
-				float[] featureVector = ve.extractFeature(image).values;
+				DoubleFV fv = ve.extractFeature(image);
+				double[] featureVector = fv.values;
+				//float[] featureVector = ve.extractFeature(image).values;
 				
 				//Add feature vector and class to database
 				featureVectors.add(featureVector);
 				classes.add(group);
+				
 			}
+			
 		}
+
+
+		
 		
 		//Array of all feature vectors
-		float[][] vectors = featureVectors.toArray(new float[featureVectors.size()][]);
+		double[][] vectors = featureVectors.toArray(new double[][]{});
 		
 		zeroMean(vectors);
 		
 		//New knn with training feature vectors
-		knn = new FloatNearestNeighboursExact(vectors);
+		knn = new DoubleNearestNeighboursExact(vectors);
 	}
 	
-	private void zeroMean(float[][] data){
+	private void zeroMean(double[][] data){
 		//TODO: zero mean & unit length
 	}
 
@@ -77,16 +98,16 @@ public class TinyImage implements Run {
 		
 		//Extract feature vector for image
 		VectorExtractor ve = new VectorExtractor();
-		float[] featureVector = ve.extractFeature(image).values;
+		double[] featureVector = ve.extractFeature(image).values;
 		
 		//Find k nearest neighbours
-		List<IntFloatPair> neighbours = knn.searchKNN(featureVector, K);
+		List<IntDoublePair> neighbours = knn.searchKNN(featureVector, K);
 		
 		//Map classes to the number of neighbours that have that class
 		Map<String,Integer> classCount = new HashMap<String,Integer>();
 		
 		//For all neighbours
-		for(IntFloatPair result: neighbours){
+		for(IntDoublePair result: neighbours){
 			//Get neighbour class
 			String resultClass = classes.get(result.first);
 			
@@ -98,6 +119,7 @@ public class TinyImage implements Run {
 			
 			//Add 1 to class count
 			classCount.put(resultClass, newCount);
+			
 		}
 		
 		//List of class and their count
@@ -125,18 +147,21 @@ public class TinyImage implements Run {
 	/** 
 	 * Extract TinyImage feature vector from image
 	 */
-	class VectorExtractor implements FeatureExtractor<FloatFV,FImage>{
+	class VectorExtractor implements FeatureExtractor<DoubleFV,FImage>{
 
-		public FloatFV extractFeature(FImage image) {
+		public DoubleFV extractFeature(FImage image) {
 			//Smallest dimension of image is the biggest the square can be
 			int size = Math.min(image.width, image.height);
 			//Extract the square from centre
+	
 			FImage center = image.extractCenter(size, size);
+
 			//Resize image to tiny image
 			FImage small = center.process(new ResizeProcessor(SQUARE_SIZE, SQUARE_SIZE));
+			
 			//2D array to 1D vector
-			float[] vector = ArrayUtils.reshape(small.pixels);
-			return new FloatFV(vector);
+			double[] vector = ArrayUtils.reshape(ArrayUtils.convertToDouble(small.pixels));
+			return new DoubleFV(vector);
 		}
 		
 	}
