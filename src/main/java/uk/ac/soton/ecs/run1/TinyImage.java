@@ -44,10 +44,10 @@ public class TinyImage implements Run {
 		classes = new ArrayList<String>();
 		featureVectors = new ArrayList<float[]>();
 		
+		VectorExtractor ve = new VectorExtractor();
 		//For each image in each class
 		for(String group : trainingSet.getGroups()){
 			for(FImage image : trainingSet.get(group)){
-				VectorExtractor ve = new VectorExtractor();
 				//Extract feature vector
 				float[] featureVector = ve.extractFeature(image).values;
 				

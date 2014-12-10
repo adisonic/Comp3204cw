@@ -17,8 +17,8 @@ import org.openimaj.experiment.evaluation.classification.analysers.confusionmatr
 import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
 
-
 import uk.ac.soton.ecs.run1.TinyImage;
+import uk.ac.soton.ecs.run2.LinearClassifier;
 
 public class Main {
 
@@ -46,6 +46,9 @@ public class Main {
         }
         if (id.equals("run1")) {
             return new TinyImage();
+        }
+        if (id.equals("run2")) {
+            return new LinearClassifier();
         }
         // Add these here:
         // if (id.equals("run1")) {
