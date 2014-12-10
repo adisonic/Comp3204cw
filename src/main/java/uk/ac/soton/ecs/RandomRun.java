@@ -1,11 +1,11 @@
 package uk.ac.soton.ecs;
 
+import java.util.ArrayList;
+import java.util.Random;
+
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
 import org.openimaj.image.FImage;
-
-import java.util.ArrayList;
-import java.util.Random;
 
 public class RandomRun implements Run {
 
