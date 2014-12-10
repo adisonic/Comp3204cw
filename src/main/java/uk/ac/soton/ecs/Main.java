@@ -7,6 +7,8 @@ import org.openimaj.experiment.dataset.sampling.GroupSampler;
 import org.openimaj.image.FImage;
 import org.openimaj.image.ImageUtilities;
 
+import uk.ac.soton.ecs.run1.TinyImage;
+
 import java.util.Set;
 import java.util.Map;
 import java.util.Iterator;
@@ -34,6 +36,9 @@ public class Main {
     public static Run getInstance(String id) {
         if (id.equals("random")) {
             return new RandomRun();
+        }
+        if (id.equals("run1")) {
+            return new TinyImage();
         }
         // Add these here:
         // if (id.equals("run1")) {

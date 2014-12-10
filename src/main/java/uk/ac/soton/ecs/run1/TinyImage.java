@@ -49,7 +49,7 @@ public class TinyImage implements Run {
 	private List<String> classes;
 	
 	
-	/*
+	/**
 	 * Train classifier
 	 */
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
@@ -83,7 +83,7 @@ public class TinyImage implements Run {
 		//TODO: zero mean & unit length
 	}
 
-	/*
+	/**
 	 * Return guess of image class
 	 */
 	public String classify(FImage image) {
@@ -129,7 +129,7 @@ public class TinyImage implements Run {
 		return guessedClass;
 	}
 	
-	/* 
+	/** 
 	 * Extract TinyImage feature vector from image
 	 */
 	class VectorExtractor implements FeatureExtractor<FloatFV,FImage>{
