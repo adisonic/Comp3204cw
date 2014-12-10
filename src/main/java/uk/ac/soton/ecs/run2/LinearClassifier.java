@@ -44,30 +44,37 @@ import org.openimaj.util.pair.IntFloatPair;
 
 import de.bwaldvogel.liblinear.SolverType;
 import uk.ac.soton.ecs.Run;
-//import uk.ac.soton.ecs.run2.Main.PHOWExtractor;
 import uk.ac.soton.ecs.Main;
 
-public class LinearClassifier implements Run{
-	
+public class LinearClassifier implements Run {
+
+    // Clustering parameters
+    public static int MAXFEATURES = 20000;
+    public static int CLUSTERS = 600;
+
+    // Patch parameters
+	public static float STEP = 6;
+	public static float PATCH_SIZE = 8;
+
 	private LiblinearAnnotator<FImage, String> ann;
 
 	public static void main(String[] args) throws Exception{
 		LinearClassifier hello = new LinearClassifier();
 		Main.run(hello, "zip:/Users/Tom/Desktop/training.zip");
 	}
+
 	@Override
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-	
 		HardAssigner<float[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet);
 	
-		FeatureExtractor<DoubleFV, FImage> extractor = new PHOWExtractor(assigner);
+		FeatureExtractor<DoubleFV, FImage> extractor = new PatchClusterFeatureExtractor(assigner);
 
 		System.out.println("liblinerannotatotr");
-		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
+		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTILABEL, SolverType.L2R_LR, 1.0, 0.00001);
 		System.out.println("about to train");
 		ann.train(trainingSet); //not working
-			
-	
+
+        System.out.println("Training finished.");
 	}
 
 	@Override
@@ -75,81 +82,69 @@ public class LinearClassifier implements Run{
 		return ann.classify(image);
 	}
 	
-	
-	//Hard Assigner
-	static HardAssigner<float[], float[], IntFloatPair> trainQuantiser(
-			Dataset<FImage> sample)
-			{
+    /**
+     * Build a HardAssigner based on k-means ran on randomly picked patches from images.
+     */
+	static HardAssigner<float[], float[], IntFloatPair> trainQuantiser(Dataset<FImage> sample) {
 		List<float[]> allkeys = new ArrayList<float[]>();
-
 	
 		for (FImage image : sample) {
-
-			List<LocalFeature<SpatialLocation, FloatFV>> sampleList = PatchExtractor.extract(image);
+			List<LocalFeature<SpatialLocation, FloatFV>> sampleList = extract(image, STEP, PATCH_SIZE);
 			System.out.println(sampleList.size());
 
 			for(LocalFeature<SpatialLocation, FloatFV> lf : sampleList){
 				allkeys.add(lf.getFeatureVector().values);
 			}
-			
 		}
 		
 		Collections.shuffle(allkeys);
-		
+	
+        // limit the number of patches to use
+		if (allkeys.size() > MAXFEATURES) 
+			allkeys = allkeys.subList(0, MAXFEATURES);
 
-		if (allkeys.size() > 20000) 
-			allkeys = allkeys.subList(0, 20000);
-
-		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(600); //trying out 500 to start with
+		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(CLUSTERS);
 		System.out.println("cluster");
 		
-		float[][] data = allkeys.toArray(new float[allkeys.size()][]);
+        float[][] data = allkeys.toArray(new float[][]{});
 		
 		FloatCentroidsResult result = km.cluster(data);
 		return result.defaultHardAssigner();
 	}
-	
-	
-	
-	static class PatchExtractor{
-		
-		private static final float STEP = 6;
-		private static final float PATCH_SIZE = 8;
-		
-		static public List<LocalFeature<SpatialLocation, FloatFV>> extract(FImage image){
-			RectangleSampler rect = new RectangleSampler(image, STEP, STEP, PATCH_SIZE, PATCH_SIZE);
-			List<LocalFeature<SpatialLocation, FloatFV>> areaList = new ArrayList<LocalFeature<SpatialLocation, FloatFV>>();
-			for(Rectangle r: rect){
-				FImage area = image.extractROI(r);
-				
-				float[] vector = ArrayUtils.reshape(area.pixels);
-				FloatFV featureV = new FloatFV(vector);
-				SpatialLocation sl = new SpatialLocation(r.x, r.y);
-				LocalFeature<SpatialLocation, FloatFV> lf = new LocalFeatureImpl<SpatialLocation, FloatFV>(sl,featureV);
-				areaList.add(lf);
-			
-			}
-			return areaList;	
-		}
-		
-		
+
+    /**
+     * Extract patches regarding to STEP and PATCH_SIZE.
+     * @param image The image to extract features from.
+     * @param step The step size.
+     * @param patch_size The size of the patches.
+     */
+	public static List<LocalFeature<SpatialLocation, FloatFV>> extract(FImage image, float step, float patch_size){
+        RectangleSampler rect = new RectangleSampler(image, step, step, patch_size, patch_size);
+        List<LocalFeature<SpatialLocation, FloatFV>> areaList = new ArrayList<LocalFeature<SpatialLocation, FloatFV>>();
+        for(Rectangle r: rect){
+            FImage area = image.extractROI(r);
+            
+            float[] vector = ArrayUtils.reshape(area.pixels);
+            FloatFV featureV = new FloatFV(vector);
+            SpatialLocation sl = new SpatialLocation(r.x, r.y);
+            LocalFeature<SpatialLocation, FloatFV> lf = new LocalFeatureImpl<SpatialLocation, FloatFV>(sl,featureV);
+            areaList.add(lf);
+        }
+        return areaList;	
 	}
 	
 	//Extractor class
-	static class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
-	
+	static class PatchClusterFeatureExtractor implements FeatureExtractor<DoubleFV, FImage> {
 		HardAssigner<float[], float[], IntFloatPair> assigner;
 
-		public PHOWExtractor(HardAssigner<float[], float[], IntFloatPair> assigner)
-		{
-			
+		public PatchClusterFeatureExtractor(HardAssigner<float[], float[], IntFloatPair> assigner) {
 			this.assigner = assigner;
 		}
 
 		public DoubleFV extractFeature(FImage image) {
 			BagOfVisualWords<float[]> bovw = new BagOfVisualWords<float[]>(assigner);
 			BlockSpatialAggregator<float[], SparseIntFV> spatial = new BlockSpatialAggregator<float[], SparseIntFV>(bovw, 2, 2);
-			return spatial.aggregate(PatchExtractor.extract(image), image.getBounds()).normaliseFV();
+			return spatial.aggregate(extract(image, STEP, PATCH_SIZE), image.getBounds()).normaliseFV();
 		}
 	}
 
