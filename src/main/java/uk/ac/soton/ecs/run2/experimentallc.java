@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.vfs2.FileSystemException;
-import org.openimaj.data.AbstractMultiListDataSource;
 import org.openimaj.data.DataSource;
 import org.openimaj.data.dataset.Dataset;
 import org.openimaj.data.dataset.GroupedDataset;
@@ -46,37 +45,32 @@ import uk.ac.soton.ecs.Run;
 //import uk.ac.soton.ecs.run2.Main.PHOWExtractor;
 import uk.ac.soton.ecs.Main;
 
-public class LinearClassifier implements Run{
+public class experimentallc implements Run{
 	
 	private LiblinearAnnotator<FImage, String> ann;
 
 	public static void main(String[] args) throws Exception{
 		
 		
-//		VFSGroupDataset<FImage> trainingSet = new VFSGroupDataset<FImage>("zip:D:/training.zip", ImageUtilities.FIMAGE_READER);
-//		GroupedRandomSplitter<String, FImage> splits =  new GroupedRandomSplitter<String, FImage>(trainingSet, 4, 0, 4);
-////
-//				GroupedDataset<String, ListDataset<FImage>, FImage> training = splits.getTrainingDataset();
-//		
+		VFSGroupDataset<FImage> trainingSet = new VFSGroupDataset<FImage>("zip:D:/training.zip", ImageUtilities.FIMAGE_READER);
+		GroupedRandomSplitter<String, FImage> splits =  new GroupedRandomSplitter<String, FImage>(trainingSet, 4, 0, 4);
+//
+				GroupedDataset<String, ListDataset<FImage>, FImage> training = splits.getTrainingDataset();
+		
 		LinearClassifier hello = new LinearClassifier();
-		Main.run(hello, "zip:D:/training.zip", 0.1);
-		//hello.train(training);
-//		FImage tempimage = training.getRandomInstance();
-//		PatchExtractor pe = new PatchExtractor();
-//		pe.extract(tempimage);
-//		
-//		DisplayUtilities.display(tempimage);
-//		System.out.println(hello.classify(tempimage).toString());
+
+		FImage tempimage = training.getRandomInstance();
+		PatchExtractor pe = new PatchExtractor();
+		pe.extract(tempimage);
+
 	}
 	@Override
 	public void train(
 			GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-		
-
-		
+	
 		
 	
-		HardAssigner<float[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet);
+		//HardAssigner<float[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet);
 	
 		FeatureExtractor<DoubleFV, FImage> extractor = new PHOWExtractor(assigner);
 
@@ -95,49 +89,12 @@ public class LinearClassifier implements Run{
 	}
 	
 	
-	//Hard Assigner
-	static HardAssigner<float[], float[], IntFloatPair> trainQuantiser(
-			Dataset<FImage> sample)
-			{
-		List<List<LocalFeature<SpatialLocation, FloatFV>>> allkeys = new ArrayList<List<LocalFeature<SpatialLocation, FloatFV>>>();
 
-		
-		for (FImage image : sample) {
-			//FImage img = rec.getImage();
-			List<LocalFeature<SpatialLocation, FloatFV>> sampleList = PatchExtractor.extract(image);
-			//pdsift.analyseImage(rec);
-			allkeys.add(sampleList);
-		}
-		
-		
-
-		if (allkeys.size() > 10000) 
-			allkeys = allkeys.subList(0, 10000);
-
-		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(500); //trying out 500 to start with
-		System.out.println("cluster");
-		DataSource<float[]> datasource = new AbstractMultiListDataSource<float[],LocalFeature<SpatialLocation, FloatFV>>(allkeys){
-			public int numDimensions() {
-
-				return 2;
-			}
-
-			@Override
-			protected float[] convert(LocalFeature<SpatialLocation, FloatFV> ele) {
-				return ele.getFeatureVector().values;
-			}
-			
-		};
-		FloatCentroidsResult result = km.cluster(datasource);
-		return result.defaultHardAssigner();
-	}
-	
-	
 	
 	static class PatchExtractor{
 		
-		private static final float STEP = 4;
-		private static final float PATCH_SIZE = 8;
+		private static final float STEP = 40;
+		private static final float PATCH_SIZE = 60;
 		
 		static public List<LocalFeature<SpatialLocation, FloatFV>> extract(FImage image){
 			RectangleSampler rect = new RectangleSampler(image, STEP, STEP, PATCH_SIZE, PATCH_SIZE);
@@ -176,8 +133,9 @@ public class LinearClassifier implements Run{
 
 			BagOfVisualWords<float[]> bovw = new BagOfVisualWords<float[]>(assigner);
 
-			BlockSpatialAggregator<float[], SparseIntFV> spatial = new BlockSpatialAggregator<float[], SparseIntFV>(
+			BlockSpatialAggregator<float[], SparseFloatFV> spatial = new BlockSpatialAggregator<float[], SparseFloatFV>(
 					bovw, 2, 2);
+			spatial.a
 			return spatial.aggregate(PatchExtractor.extract(image), image.getBounds()).normaliseFV();
 		}
 	}
