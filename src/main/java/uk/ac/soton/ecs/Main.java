@@ -19,6 +19,7 @@ import org.openimaj.image.ImageUtilities;
 
 import uk.ac.soton.ecs.run1.TinyImage;
 import uk.ac.soton.ecs.run2.LinearClassifier;
+import uk.ac.soton.ecs.run3.GistVersion;
 
 public class Main {
 
@@ -65,6 +66,9 @@ public class Main {
         }
         if (id.equals("run2")) {
             return new LinearClassifier();
+        }
+        if (id.equals("run3")) {
+            return new GistVersion();
         }
         // Add these here:
         // if (id.equals("run1")) {
