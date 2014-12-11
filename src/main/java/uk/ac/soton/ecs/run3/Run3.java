@@ -58,10 +58,10 @@ public class Run3 implements Run {
 		
 		VFSGroupDataset<FImage> images = new VFSGroupDataset<FImage>("/Users/Tom/Desktop/training/", ImageUtilities.FIMAGE_READER);
 
-		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 15, false);
+		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 5, false);
 
 		GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(
-				data, 10, 0, 4);
+				data, 4, 0, 4);
 		
 		Run3 r3 = new Run3();
 		r3.train(splits.getTrainingDataset());
@@ -82,9 +82,9 @@ public class Run3 implements Run {
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
 
 			
-		DenseSIFT dsift = new DenseSIFT(6, 16);
+		DenseSIFT dsift = new DenseSIFT(4, 7);
 		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(
-				dsift, 4f, 3,5);
+				dsift, 6f, 3,5,7);
 		
 		
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
@@ -124,7 +124,7 @@ public class Run3 implements Run {
 		if (allkeys.size() > 10000)
 			allkeys = allkeys.subList(0, 10000);
 
-		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(600);
+		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(300);
 		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
 		System.out.println("Start cluster");
 		ByteCentroidsResult result = km.cluster(datasource);

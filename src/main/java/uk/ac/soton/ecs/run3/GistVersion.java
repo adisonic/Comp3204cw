@@ -88,30 +88,14 @@ public class GistVersion implements Run {
 	
 
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-		Gist<FImage> gist = new Gist<FImage>(300, 300);
 		
-		//Do we need this?
+		//Gist descriptor creator
+		Gist<FImage> gist = new Gist<FImage>(256, 256);
+		
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
 		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new GistExtractor(gist));
 		
-		//67.1 = L2R_L2LOSS_SVC
-		//76.1 = L2R_L2LOSS_SVC_DUAL
-		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC_DUAL, 1.0, 0.00001);
-
-		/*
-		ann = new KNNAnnotator<FImage, String,DoubleFV>(extractor, new DistanceComparator<DoubleFV>(){
-			public double compare(DoubleFV o1, DoubleFV o2) {
-				return DoubleFVComparison.SUM_SQUARE.compare(o1, o2);
-			}
-
-			@Override
-			public boolean isDistance() {
-				return true;
-			}
-			
-		},20);
-		*/
-		
+		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC_DUAL, 1.0, 0.00001);	
 		
 		System.out.println("Start training");
 		ann.train(trainingSet);
@@ -125,6 +109,8 @@ public class GistVersion implements Run {
 		return ann.classify(image);
 	}
 		
+	
+	//Extract a feature vector from an image using gist
 	class GistExtractor implements FeatureExtractor<FloatFV, FImage> {
 		
 		private Gist<FImage> gist;

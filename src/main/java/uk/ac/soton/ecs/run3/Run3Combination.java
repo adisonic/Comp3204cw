@@ -125,7 +125,7 @@ public class Run3Combination implements Run {
 		if (allkeys.size() > 10000)
 			allkeys = allkeys.subList(0, 10000);
 
-		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(300);
+		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(600);
 		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
 		System.out.println("Start cluster");
 		ByteCentroidsResult result = km.cluster(datasource);
