@@ -55,41 +55,25 @@ import uk.ac.soton.ecs.Run;
 public class Run3 implements Run {
 	
 	public static void main(String[] args) throws Exception{
-		
-		VFSGroupDataset<FImage> images = new VFSGroupDataset<FImage>("/Users/Tom/Desktop/training/", ImageUtilities.FIMAGE_READER);
-
-		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 5, false);
-
-		GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(
-				data, 50, 0, 15);
-		
 		Run3 r3 = new Run3();
-		r3.train(splits.getTrainingDataset());
-		
-		ClassificationEvaluator<CMResult<String>, String, FImage> eval = 
-				new ClassificationEvaluator<CMResult<String>, String, FImage>(
-					r3, splits.getTestDataset(), new CMAnalyser<FImage, String>(CMAnalyser.Strategy.SINGLE));
-					
-	Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
-	CMResult<String> result = eval.analyse(guesses);
-	System.out.println(result.getDetailReport());
-		//Run3 r3 = new Run3();
-		//Main.run(r3, "zip:/Users/Tom/Desktop/training.zip");
+		Main.run(r3, "zip:/Users/Tom/Desktop/training.zip");
 	}
 	
+	//Bayes classifier
 	private NaiveBayesAnnotator<FImage, String> ann;
 
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-
-			
+		
+		//Dense sift pyramid
 		DenseSIFT dsift = new DenseSIFT(5, 5);
 		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(
 				dsift, 6f, 7);
 		
-		
+		//Assigner assigning sift features to visual word
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
 		
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
+		//Feature extractor based on bag of visual words
 		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
 		
 		
@@ -108,25 +92,32 @@ public class Run3 implements Run {
 	}
 	
 	
+	//Generate visual words
 	static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(Dataset<FImage> sample, PyramidDenseSIFT<FImage> pdsift) {
-		List<LocalFeatureList<ByteDSIFTKeypoint>> allkeys = new ArrayList<LocalFeatureList<ByteDSIFTKeypoint>>();
+		//List of sift features from training set
+		List<LocalFeatureList<ByteDSIFTKeypoint>> siftFeatures = new ArrayList<LocalFeatureList<ByteDSIFTKeypoint>>();
 
 		System.out.println("Sift train start");
+		//For each image
 		for (FImage img : sample) {
 			System.out.println("image");
+			//Get sift features
 			pdsift.analyseImage(img);
-			allkeys.add(pdsift.getByteKeypoints(0.005f));
+			siftFeatures.add(pdsift.getByteKeypoints(0.005f));
 		}
 		
-		Collections.shuffle(allkeys);
 		System.out.println("Sift train done");
 
-		if (allkeys.size() > 10000)
-			allkeys = allkeys.subList(0, 10000);
+		//Reduce set of sift features for time
+		if (siftFeatures.size() > 10000)
+			siftFeatures = siftFeatures.subList(0, 10000);
 
+		//Create a kmeans classifier with 600 categories (600 visual words)
 		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(600);
-		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
+		
+		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(siftFeatures);
 		System.out.println("Start cluster");
+		//Generate clusters (Visual words) from sift features.
 		ByteCentroidsResult result = km.cluster(datasource);
 		System.out.println("Cluster done");
 
@@ -134,6 +125,7 @@ public class Run3 implements Run {
 	}
 	
 	
+	//Extract bag of visual words feature vector
 	class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
 	    PyramidDenseSIFT<FImage> pdsift;
 	    HardAssigner<byte[], float[], IntFloatPair> assigner;
@@ -144,15 +136,19 @@ public class Run3 implements Run {
 	        this.assigner = assigner;
 	    }
 
-	    public DoubleFV extractFeature(FImage object) {
-	        FImage image = object.getImage();
+	    public DoubleFV extractFeature(FImage image) {
+	    	
+	    	//Get sift features of input image
 	        pdsift.analyseImage(image);
 
+	        //Gag of visual words histogram representation 
 	        BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
 
+	        //Bag of visual words for blocks and combine
 	        BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
-	                bovw, 4, 4);
+	                bovw, 2, 2);
 
+	        //Return normalised feature vector
 	        return spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
 	    }
 	}

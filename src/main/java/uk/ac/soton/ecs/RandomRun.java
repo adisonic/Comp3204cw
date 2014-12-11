@@ -5,11 +5,8 @@ import java.util.Random;
 
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
-import org.openimaj.image.FImage;
-import org.openimaj.experiment.evaluation.classification.ClassificationResult;
 import org.openimaj.experiment.evaluation.classification.BasicClassificationResult;
-import java.util.ArrayList;
-import java.util.Random;
+import org.openimaj.image.FImage;
 
 public class RandomRun implements Run {
 

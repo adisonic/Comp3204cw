@@ -1,16 +1,11 @@
 package uk.ac.soton.ecs.run2;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.vfs2.FileSystemException;
-import org.openimaj.data.AbstractMultiListDataSource;
-import org.openimaj.data.DataSource;
 import org.openimaj.data.dataset.Dataset;
 import org.openimaj.data.dataset.GroupedDataset;
 import org.openimaj.data.dataset.ListDataset;
-import org.openimaj.data.dataset.VFSGroupDataset;
 import org.openimaj.experiment.dataset.split.GroupedRandomSplitter;
 import org.openimaj.experiment.evaluation.classification.ClassificationResult;
 import org.openimaj.feature.DoubleFV;
@@ -20,31 +15,21 @@ import org.openimaj.feature.SparseIntFV;
 import org.openimaj.feature.local.LocalFeature;
 import org.openimaj.feature.local.LocalFeatureImpl;
 import org.openimaj.feature.local.SpatialLocation;
-import org.openimaj.feature.local.data.LocalFeatureListDataSource;
-import org.openimaj.feature.local.list.LocalFeatureList;
-import org.openimaj.image.DisplayUtilities;
 import org.openimaj.image.FImage;
-import org.openimaj.image.ImageUtilities;
-import org.openimaj.image.feature.dense.gradient.dsift.ByteDSIFTKeypoint;
-import org.openimaj.image.feature.dense.gradient.dsift.DenseSIFT;
-import org.openimaj.image.feature.dense.gradient.dsift.PyramidDenseSIFT;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
 import org.openimaj.image.pixel.sampling.RectangleSampler;
 import org.openimaj.math.geometry.shape.Rectangle;
 import org.openimaj.ml.annotation.linear.LiblinearAnnotator;
 import org.openimaj.ml.annotation.linear.LiblinearAnnotator.Mode;
-import org.openimaj.ml.clustering.ByteCentroidsResult;
 import org.openimaj.ml.clustering.FloatCentroidsResult;
 import org.openimaj.ml.clustering.assignment.HardAssigner;
-import org.openimaj.ml.clustering.kmeans.ByteKMeans;
 import org.openimaj.ml.clustering.kmeans.FloatKMeans;
 import org.openimaj.util.array.ArrayUtils;
 import org.openimaj.util.pair.IntFloatPair;
 
-import de.bwaldvogel.liblinear.SolverType;
 import uk.ac.soton.ecs.Run;
-import uk.ac.soton.ecs.Main;
+import de.bwaldvogel.liblinear.SolverType;
 
 /**
  * The linear classifier used for Run#2.
@@ -120,7 +105,7 @@ public class LinearClassifier implements Run {
 			}
 		}
 
-        // Instatiate CLUSTERS-Means.     
+        // Instantiate CLUSTERS-Means.     
 		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(CLUSTERS);
         float[][] data = allkeys.toArray(new float[][]{});
 	
@@ -172,7 +157,7 @@ public class LinearClassifier implements Run {
         /**
          * Extract features of image, in respect to the HardAssigner.
          * @param image The FImage to use.
-         * @return A feature fector.
+         * @return A feature vector.
          */
 		public DoubleFV extractFeature(FImage image) {
 			BagOfVisualWords<float[]> bovw = new BagOfVisualWords<float[]>(assigner);

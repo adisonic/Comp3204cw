@@ -38,9 +38,6 @@ public class TinyImage implements Run {
 	
 	private DoubleNearestNeighboursExact knn;
 
-    // Normalisation parameters
-    private Normalisation norm;
-
 	//The training feature vectors
 	private List<double[]> featureVectors;
 	//The classes of the training feature vectors (array indices correspond to featureVector indices)
@@ -143,8 +140,8 @@ public class TinyImage implements Run {
 		public DoubleFV extractFeature(FImage image) {
 			//Smallest dimension of image is the biggest the square can be
 			int size = Math.min(image.width, image.height);
+			
 			//Extract the square from centre
-	
 			FImage center = image.extractCenter(size, size);
 
 			//Resize image to tiny image
