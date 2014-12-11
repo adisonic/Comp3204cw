@@ -54,51 +54,24 @@ import uk.ac.soton.ecs.Run;
 
 public class Run3 implements Run {
 	
-	public static void main(String[] args) throws Exception{
-		
-		VFSGroupDataset<FImage> images = new VFSGroupDataset<FImage>("/Users/Tom/Desktop/training/", ImageUtilities.FIMAGE_READER);
-
-		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 5, false);
-
-		GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(
-				data, 50, 0, 15);
-		
-		Run3 r3 = new Run3();
-		r3.train(splits.getTrainingDataset());
-		
-		ClassificationEvaluator<CMResult<String>, String, FImage> eval = 
-				new ClassificationEvaluator<CMResult<String>, String, FImage>(
-					r3, splits.getTestDataset(), new CMAnalyser<FImage, String>(CMAnalyser.Strategy.SINGLE));
-					
-	Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
-	CMResult<String> result = eval.analyse(guesses);
-	System.out.println(result.getDetailReport());
-		//Run3 r3 = new Run3();
-		//Main.run(r3, "zip:/Users/Tom/Desktop/training.zip");
-	}
-	
-	private NaiveBayesAnnotator<FImage, String> ann;
+	private LiblinearAnnotator<FImage, String> ann;
 
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
 
-			
 		DenseSIFT dsift = new DenseSIFT(5, 7);
 		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(
 				dsift, 6f, 7);
-		
 		
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
 		
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
 		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
 		
-		
-		ann = new NaiveBayesAnnotator<FImage, String>(extractor,NaiveBayesAnnotator.Mode.ALL);
+		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
 		System.out.println("Start training");
+
 		ann.train(trainingSet);
 		System.out.println("Train done");
-		
-		
 	}
 	
 
