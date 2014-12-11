@@ -50,11 +50,11 @@ public class LinearClassifier implements Run {
 
     // Clustering parameters
     public static int CLUSTERS = 500;
-    public static int IMAGES_FOR_VOCABULARY = 4;
+    public static int IMAGES_FOR_VOCABULARY = 10;
 
     // Patch parameters
-	public static float STEP = 6;
-	public static float PATCH_SIZE = 8;
+	public static float STEP = 8;
+	public static float PATCH_SIZE = 12;
 
 	private LiblinearAnnotator<FImage, String> ann;
 
