@@ -19,8 +19,10 @@ import org.openimaj.experiment.evaluation.classification.ClassificationResult;
 import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMAnalyser;
 import org.openimaj.experiment.evaluation.classification.analysers.confusionmatrix.CMResult;
 import org.openimaj.feature.DoubleFV;
+import org.openimaj.feature.DoubleFVComparison;
 import org.openimaj.feature.FeatureExtractor;
 import org.openimaj.feature.FloatFV;
+import org.openimaj.feature.FloatFVComparison;
 import org.openimaj.feature.SparseIntFV;
 import org.openimaj.feature.local.LocalFeature;
 import org.openimaj.feature.local.SpatialLocation;
@@ -36,6 +38,7 @@ import org.openimaj.image.feature.dense.gradient.dsift.PyramidDenseSIFT;
 import org.openimaj.image.feature.global.Gist;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
+import org.openimaj.ml.annotation.basic.KNNAnnotator;
 import org.openimaj.ml.annotation.bayes.NaiveBayesAnnotator;
 import org.openimaj.ml.annotation.linear.LiblinearAnnotator;
 import org.openimaj.ml.annotation.linear.LiblinearAnnotator.Mode;
@@ -47,6 +50,7 @@ import org.openimaj.ml.clustering.kmeans.FloatKMeans;
 import org.openimaj.ml.kernel.HomogeneousKernelMap;
 import org.openimaj.ml.kernel.HomogeneousKernelMap.KernelType;
 import org.openimaj.ml.kernel.HomogeneousKernelMap.WindowType;
+import org.openimaj.util.comparator.DistanceComparator;
 import org.openimaj.util.pair.IntFloatPair;
 
 import de.bwaldvogel.liblinear.SolverType;
@@ -55,16 +59,14 @@ import uk.ac.soton.ecs.Run;
 
 public class GistVersion implements Run {
 	
-	private FloatCentroidsResult result;
-	
 	public static void main(String[] args) throws Exception{
 		
 		VFSGroupDataset<FImage> images = new VFSGroupDataset<FImage>("/Users/Tom/Desktop/training/", ImageUtilities.FIMAGE_READER);
 
-		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 5, false);
+		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 15, false);
 
 		GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(
-				data, 70, 0, 15);
+				data, 50, 0, 50);
 		
 		GistVersion r3 = new GistVersion();
 		r3.train(splits.getTrainingDataset());
@@ -81,15 +83,35 @@ public class GistVersion implements Run {
 	//	Main.run(gv, "zip:/Users/Tom/Desktop/training.zip");
 	}
 	
-	private LiblinearAnnotator<FImage, String> ann;
+	LiblinearAnnotator<FImage, String>  ann;
+	
+	
 
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-		Gist<FImage> gist = new Gist<FImage>();
+		Gist<FImage> gist = new Gist<FImage>(256, 256);
 		
-		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Uniform);
+		//Do we need this?
+		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
 		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new GistExtractor(gist));
 		
-		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
+		//67.1 = L2R_L2LOSS_SVC
+		//76.1 = L2R_L2LOSS_SVC_DUAL
+		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC_DUAL, 1.0, 0.00001);
+
+		/*
+		ann = new KNNAnnotator<FImage, String,DoubleFV>(extractor, new DistanceComparator<DoubleFV>(){
+			public double compare(DoubleFV o1, DoubleFV o2) {
+				return DoubleFVComparison.SUM_SQUARE.compare(o1, o2);
+			}
+
+			@Override
+			public boolean isDistance() {
+				return true;
+			}
+			
+		},20);
+		*/
+		
 		
 		System.out.println("Start training");
 		ann.train(trainingSet);

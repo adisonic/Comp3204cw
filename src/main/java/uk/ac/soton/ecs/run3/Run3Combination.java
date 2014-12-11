@@ -33,6 +33,7 @@ import org.openimaj.image.annotation.evaluation.datasets.Caltech101.Record;
 import org.openimaj.image.feature.dense.gradient.dsift.ByteDSIFTKeypoint;
 import org.openimaj.image.feature.dense.gradient.dsift.DenseSIFT;
 import org.openimaj.image.feature.dense.gradient.dsift.PyramidDenseSIFT;
+import org.openimaj.image.feature.global.Gist;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
 import org.openimaj.ml.annotation.bayes.NaiveBayesAnnotator;
@@ -52,7 +53,7 @@ import de.bwaldvogel.liblinear.SolverType;
 import uk.ac.soton.ecs.Main;
 import uk.ac.soton.ecs.Run;
 
-public class Run3 implements Run {
+public class Run3Combination implements Run {
 	
 	public static void main(String[] args) throws Exception{
 		
@@ -61,9 +62,9 @@ public class Run3 implements Run {
 		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 15, false);
 
 		GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(
-				data, 10, 0, 4);
+				data, 4, 0, 4);
 		
-		Run3 r3 = new Run3();
+		Run3Combination r3 = new Run3Combination();
 		r3.train(splits.getTrainingDataset());
 		
 		ClassificationEvaluator<CMResult<String>, String, FImage> eval = 
@@ -124,7 +125,7 @@ public class Run3 implements Run {
 		if (allkeys.size() > 10000)
 			allkeys = allkeys.subList(0, 10000);
 
-		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(600);
+		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(300);
 		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
 		System.out.println("Start cluster");
 		ByteCentroidsResult result = km.cluster(datasource);
@@ -137,6 +138,7 @@ public class Run3 implements Run {
 	class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
 	    PyramidDenseSIFT<FImage> pdsift;
 	    HardAssigner<byte[], float[], IntFloatPair> assigner;
+	    Gist<FImage> gist = new Gist<FImage>(256, 256);
 
 	    public PHOWExtractor(PyramidDenseSIFT<FImage> pdsift, HardAssigner<byte[], float[], IntFloatPair> assigner)
 	    {
@@ -146,14 +148,14 @@ public class Run3 implements Run {
 
 	    public DoubleFV extractFeature(FImage object) {
 	        FImage image = object.getImage();
-	        pdsift.analyseImage(image);
 
 	        BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
 
 	        BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
 	                bovw, 4, 4);
-
-	        return spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
+	        
+	        DoubleFV fv = spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
+	        return fv;
 	    }
 	}
 
