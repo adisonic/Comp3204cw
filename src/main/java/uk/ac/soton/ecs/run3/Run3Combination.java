@@ -54,7 +54,8 @@ import uk.ac.soton.ecs.Main;
 import uk.ac.soton.ecs.Run;
 
 public class Run3Combination implements Run {
-	
+
+    public static int IMAGES_FOR_VOCABULARY = 4;    
 	public static void main(String[] args) throws Exception{
 		
 		VFSGroupDataset<FImage> images = new VFSGroupDataset<FImage>("/Users/vlad/Projects/uni/cv/groupf/training", ImageUtilities.FIMAGE_READER);
@@ -71,9 +72,9 @@ public class Run3Combination implements Run {
 				new ClassificationEvaluator<CMResult<String>, String, FImage>(
 					r3, splits.getTestDataset(), new CMAnalyser<FImage, String>(CMAnalyser.Strategy.SINGLE));
 					
-	Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
-	CMResult<String> result = eval.analyse(guesses);
-	System.out.println(result.getDetailReport());
+        Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
+        CMResult<String> result = eval.analyse(guesses);
+        System.out.println(result.getDetailReport());
 		//Run3 r3 = new Run3();
 		//Main.run(r3, "zip:/Users/Tom/Desktop/training.zip");
 	}
@@ -88,7 +89,8 @@ public class Run3Combination implements Run {
 				dsift, 6f, 2,5);
 		
 		
-		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
+        GroupedRandomSplitter<String, FImage> rndspl = new GroupedRandomSplitter<String, FImage>(trainingSet, IMAGES_FOR_VOCABULARY, 0, 0);
+		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(rndspl.getTrainingDataset(), pdsift);
 		
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
 		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
@@ -111,19 +113,16 @@ public class Run3Combination implements Run {
 	
 	static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(Dataset<FImage> sample, PyramidDenseSIFT<FImage> pdsift) {
 		List<LocalFeatureList<ByteDSIFTKeypoint>> allkeys = new ArrayList<LocalFeatureList<ByteDSIFTKeypoint>>();
-
+        int  i =0;
 		System.out.println("Sift train start");
 		for (FImage img : sample) {
-			System.out.println("image");
 			pdsift.analyseImage(img);
 			allkeys.add(pdsift.getByteKeypoints(0.005f));
+			System.err.print("\r " + (i++));
 		}
-		
-		Collections.shuffle(allkeys);
-		System.out.println("Sift train done");
-
-		if (allkeys.size() > 10000)
-			allkeys = allkeys.subList(0, 10000);
+	System.err.println();	
+//		Collections.shuffle(allkeys);
+		System.err.println("Sift train done");
 
 		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(600);
 		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
