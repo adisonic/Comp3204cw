@@ -56,13 +56,16 @@ public class Run3 implements Run {
 	
 	private LiblinearAnnotator<FImage, String> ann;
 
+    public static final int IMAGES_FOR_VOCABULARY = 25; 
+
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
 
-		DenseSIFT dsift = new DenseSIFT(5, 7);
+		DenseSIFT dsift = new DenseSIFT();
 		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(
-				dsift, 6f, 7);
-		
-		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
+				dsift, 0.1f, 4, 8, 16);
+
+        GroupedRandomSplitter<String, FImage> rndspl = new GroupedRandomSplitter<String, FImage>(trainingSet, IMAGES_FOR_VOCABULARY, 0, 0);
+		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(rndspl.getTrainingDataset(), pdsift);
 		
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
 		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
@@ -91,9 +94,6 @@ public class Run3 implements Run {
 			allkeys.add(pdsift.getByteKeypoints(0.005f));
 		}
 		System.out.println("Sift train done");
-
-		if (allkeys.size() > 15000)
-			allkeys = allkeys.subList(0, 15000);
 
 		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(500);
 		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
