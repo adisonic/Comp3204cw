@@ -82,9 +82,9 @@ public class Run3 implements Run {
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
 
 			
-		DenseSIFT dsift = new DenseSIFT(5, 5);
+		DenseSIFT dsift = new DenseSIFT(6, 16);
 		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(
-				dsift, 6f, 7);
+				dsift, 4f, 3,5);
 		
 		
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
@@ -151,7 +151,7 @@ public class Run3 implements Run {
 	        BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
 
 	        BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
-	                bovw, 4, 4);
+	                bovw, 2, 2);
 
 	        return spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
 	    }

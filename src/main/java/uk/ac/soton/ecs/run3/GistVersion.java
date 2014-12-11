@@ -88,7 +88,7 @@ public class GistVersion implements Run {
 	
 
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-		Gist<FImage> gist = new Gist<FImage>(256, 256);
+		Gist<FImage> gist = new Gist<FImage>(300, 300);
 		
 		//Do we need this?
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
@@ -122,7 +122,6 @@ public class GistVersion implements Run {
 	
 
 	public ClassificationResult<String> classify(FImage image) {
-		System.out.println("Classify");
 		return ann.classify(image);
 	}
 		

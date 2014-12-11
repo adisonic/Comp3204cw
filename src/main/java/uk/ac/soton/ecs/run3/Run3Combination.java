@@ -85,7 +85,7 @@ public class Run3Combination implements Run {
 			
 		DenseSIFT dsift = new DenseSIFT(5, 5);
 		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(
-				dsift, 6f, 7);
+				dsift, 6f, 2,5);
 		
 		
 		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
@@ -148,6 +148,7 @@ public class Run3Combination implements Run {
 
 	    public DoubleFV extractFeature(FImage object) {
 	        FImage image = object.getImage();
+	        pdsift.analyseImage(image);
 
 	        BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
 
@@ -155,7 +156,10 @@ public class Run3Combination implements Run {
 	                bovw, 4, 4);
 	        
 	        DoubleFV fv = spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
-	        return fv;
+	        gist.analyseImage(object);
+	        DoubleFV g = gist.getResponse().normaliseFV();
+
+	        return fv.concatenate(g);
 	    }
 	}
 
