@@ -71,15 +71,15 @@ public class Run3 implements Run {
 		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
 		
 		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
-		System.out.println("Start training");
+		System.err.println("Start training");
 
 		ann.train(trainingSet);
-		System.out.println("Train done");
+		System.err.println("Train done");
 	}
 	
 
 	public ClassificationResult<String> classify(FImage image) {
-		System.out.println("Classify");
+		System.err.println("Classify");
 		return ann.classify(image);
 	}
 	
@@ -87,19 +87,21 @@ public class Run3 implements Run {
 	static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(Dataset<FImage> sample, PyramidDenseSIFT<FImage> pdsift) {
 		List<LocalFeatureList<ByteDSIFTKeypoint>> allkeys = new ArrayList<LocalFeatureList<ByteDSIFTKeypoint>>();
 
-		System.out.println("Sift train start");
+		System.err.println("Sift train start");
+        int prg = 0;
+        int total = sample.numInstances();
 		for (FImage img : sample) {
-			System.out.println("image");
 			pdsift.analyseImage(img);
-			allkeys.add(pdsift.getByteKeypoints(0.005f));
+			allkeys.add(pdsift.getByteKeypoints(0.0005f));
+            System.err.print("\r " + (prg++) + " / " + total + "    ");
 		}
-		System.out.println("Sift train done");
+		System.err.println("\r Sift train done 100%.");
 
 		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(500);
 		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
-		System.out.println("Start cluster");
+		System.err.println("Start cluster");
 		ByteCentroidsResult result = km.cluster(datasource);
-		System.out.println("Cluster done");
+		System.err.println("Cluster done");
 
 		return result.defaultHardAssigner();
 	}
