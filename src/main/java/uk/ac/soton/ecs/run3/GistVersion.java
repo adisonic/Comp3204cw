@@ -75,9 +75,9 @@ public class GistVersion implements Run {
 				new ClassificationEvaluator<CMResult<String>, String, FImage>(
 					r3, splits.getTestDataset(), new CMAnalyser<FImage, String>(CMAnalyser.Strategy.SINGLE));
 					
-	Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
-	CMResult<String> result = eval.analyse(guesses);
-	System.out.println(result.getDetailReport());
+        Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
+        CMResult<String> result = eval.analyse(guesses);
+        System.err.println(result.getDetailReport());
 		
 	//	GistVersion gv = new GistVersion();
 	//	Main.run(gv, "zip:/Users/Tom/Desktop/training.zip");
@@ -85,8 +85,6 @@ public class GistVersion implements Run {
 	
 	LiblinearAnnotator<FImage, String>  ann;
 	
-	
-
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
 		Gist<FImage> gist = new Gist<FImage>(300, 300);
 		
@@ -112,12 +110,9 @@ public class GistVersion implements Run {
 		},20);
 		*/
 		
-		
-		System.out.println("Start training");
+		System.err.println("Start training");
 		ann.train(trainingSet);
-		System.out.println("Train done");
-		
-		
+		System.err.println("Train done");
 	}
 	
 
