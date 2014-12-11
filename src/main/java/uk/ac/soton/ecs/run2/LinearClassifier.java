@@ -133,9 +133,13 @@ public class LinearClassifier implements Run {
         for(Rectangle r : rect){
             FImage area = image.extractROI(r);
 
+            //2D array to 1D array
             float[] vector = ArrayUtils.reshape(area.pixels);
             FloatFV featureV = new FloatFV(vector);
+            //Location of rectangle is location of feature
             SpatialLocation sl = new SpatialLocation(r.x, r.y);
+            
+            //Generate as a local feature for compatibility with other modules
             LocalFeature<SpatialLocation, FloatFV> lf = new LocalFeatureImpl<SpatialLocation, FloatFV>(sl,featureV);
 
             areaList.add(lf);
