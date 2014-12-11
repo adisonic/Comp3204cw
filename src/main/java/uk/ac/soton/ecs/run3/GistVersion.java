@@ -33,6 +33,7 @@ import org.openimaj.image.annotation.evaluation.datasets.Caltech101.Record;
 import org.openimaj.image.feature.dense.gradient.dsift.ByteDSIFTKeypoint;
 import org.openimaj.image.feature.dense.gradient.dsift.DenseSIFT;
 import org.openimaj.image.feature.dense.gradient.dsift.PyramidDenseSIFT;
+import org.openimaj.image.feature.global.Gist;
 import org.openimaj.image.feature.local.aggregate.BagOfVisualWords;
 import org.openimaj.image.feature.local.aggregate.BlockSpatialAggregator;
 import org.openimaj.ml.annotation.bayes.NaiveBayesAnnotator;
@@ -52,7 +53,9 @@ import de.bwaldvogel.liblinear.SolverType;
 import uk.ac.soton.ecs.Main;
 import uk.ac.soton.ecs.Run;
 
-public class Run3 implements Run {
+public class GistVersion implements Run {
+	
+	private FloatCentroidsResult result;
 	
 	public static void main(String[] args) throws Exception{
 		
@@ -61,9 +64,9 @@ public class Run3 implements Run {
 		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 5, false);
 
 		GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(
-				data, 50, 0, 15);
+				data, 70, 0, 15);
 		
-		Run3 r3 = new Run3();
+		GistVersion r3 = new GistVersion();
 		r3.train(splits.getTrainingDataset());
 		
 		ClassificationEvaluator<CMResult<String>, String, FImage> eval = 
@@ -73,27 +76,21 @@ public class Run3 implements Run {
 	Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
 	CMResult<String> result = eval.analyse(guesses);
 	System.out.println(result.getDetailReport());
-		//Run3 r3 = new Run3();
-		//Main.run(r3, "zip:/Users/Tom/Desktop/training.zip");
+		
+	//	GistVersion gv = new GistVersion();
+	//	Main.run(gv, "zip:/Users/Tom/Desktop/training.zip");
 	}
 	
-	private NaiveBayesAnnotator<FImage, String> ann;
+	private LiblinearAnnotator<FImage, String> ann;
 
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-
-			
-		DenseSIFT dsift = new DenseSIFT(5, 5);
-		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(
-				dsift, 6f, 7);
+		Gist<FImage> gist = new Gist<FImage>();
 		
+		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Uniform);
+		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new GistExtractor(gist));
 		
-		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
+		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
 		
-		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
-		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
-		
-		
-		ann = new NaiveBayesAnnotator<FImage, String>(extractor,NaiveBayesAnnotator.Mode.MAXIMUM_LIKELIHOOD);
 		System.out.println("Start training");
 		ann.train(trainingSet);
 		System.out.println("Train done");
@@ -106,54 +103,18 @@ public class Run3 implements Run {
 		System.out.println("Classify");
 		return ann.classify(image);
 	}
-	
-	
-	static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(Dataset<FImage> sample, PyramidDenseSIFT<FImage> pdsift) {
-		List<LocalFeatureList<ByteDSIFTKeypoint>> allkeys = new ArrayList<LocalFeatureList<ByteDSIFTKeypoint>>();
-
-		System.out.println("Sift train start");
-		for (FImage img : sample) {
-			System.out.println("image");
-			pdsift.analyseImage(img);
-			allkeys.add(pdsift.getByteKeypoints(0.005f));
+		
+	class GistExtractor implements FeatureExtractor<FloatFV, FImage> {
+		
+		private Gist<FImage> gist;
+		
+		public GistExtractor(Gist<FImage> gist){
+			this.gist = gist;
 		}
 		
-		Collections.shuffle(allkeys);
-		System.out.println("Sift train done");
-
-		if (allkeys.size() > 10000)
-			allkeys = allkeys.subList(0, 10000);
-
-		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(600);
-		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
-		System.out.println("Start cluster");
-		ByteCentroidsResult result = km.cluster(datasource);
-		System.out.println("Cluster done");
-
-		return result.defaultHardAssigner();
-	}
-	
-	
-	class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
-	    PyramidDenseSIFT<FImage> pdsift;
-	    HardAssigner<byte[], float[], IntFloatPair> assigner;
-
-	    public PHOWExtractor(PyramidDenseSIFT<FImage> pdsift, HardAssigner<byte[], float[], IntFloatPair> assigner)
-	    {
-	        this.pdsift = pdsift;
-	        this.assigner = assigner;
-	    }
-
-	    public DoubleFV extractFeature(FImage object) {
-	        FImage image = object.getImage();
-	        pdsift.analyseImage(image);
-
-	        BagOfVisualWords<byte[]> bovw = new BagOfVisualWords<byte[]>(assigner);
-
-	        BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
-	                bovw, 4, 4);
-
-	        return spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
+	    public FloatFV extractFeature(FImage object) {
+	    	gist.analyseImage(object);
+	        return gist.getResponse();
 	    }
 	}
 
