@@ -49,19 +49,14 @@ import uk.ac.soton.ecs.Main;
 public class LinearClassifier implements Run {
 
     // Clustering parameters
-    public static int CLUSTERS = 600;
-    public static int IMAGES_FOR_VOCABULARY = 3;
+    public static int CLUSTERS = 500;
+    public static int IMAGES_FOR_VOCABULARY = 4;
 
     // Patch parameters
-	public static float STEP = 8;
-	public static float PATCH_SIZE = 16;
+	public static float STEP = 6;
+	public static float PATCH_SIZE = 8;
 
 	private LiblinearAnnotator<FImage, String> ann;
-
-	public static void main(String[] args) throws Exception{
-		LinearClassifier hello = new LinearClassifier();
-		Main.run(hello, "zip:/Users/Tom/Desktop/training.zip");
-	}
 
 	@Override
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
@@ -71,12 +66,12 @@ public class LinearClassifier implements Run {
 	
 		FeatureExtractor<DoubleFV, FImage> extractor = new PatchClusterFeatureExtractor(assigner);
 
-		System.out.println("liblinerannotatotr");
-		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTILABEL, SolverType.L2R_LR, 1.0, 0.00001);
-		System.out.println("about to train");
+		System.err.println("liblinerannotatotr");
+		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC, 1.0, 0.00001);
+		System.err.println("about to train");
 		ann.train(trainingSet); //not working
 
-        System.out.println("Training finished.");
+        System.err.println("Training finished.");
 	}
 
 	@Override
@@ -92,7 +87,7 @@ public class LinearClassifier implements Run {
 	
 		for (FImage image : sample) {
 			List<LocalFeature<SpatialLocation, FloatFV>> sampleList = extract(image, STEP, PATCH_SIZE);
-			System.out.println(sampleList.size());
+			System.err.println(sampleList.size());
 
 			for(LocalFeature<SpatialLocation, FloatFV> lf : sampleList){
 				allkeys.add(lf.getFeatureVector().values);
@@ -100,7 +95,7 @@ public class LinearClassifier implements Run {
 		}
 	
 		FloatKMeans km = FloatKMeans.createKDTreeEnsemble(CLUSTERS);
-		System.out.println("cluster");
+		System.err.println("cluster");
 		
         float[][] data = allkeys.toArray(new float[][]{});
 		
