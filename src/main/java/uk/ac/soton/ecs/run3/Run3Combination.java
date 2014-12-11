@@ -57,7 +57,7 @@ public class Run3Combination implements Run {
 	
 	public static void main(String[] args) throws Exception{
 		
-		VFSGroupDataset<FImage> images = new VFSGroupDataset<FImage>("/Users/Tom/Desktop/training/", ImageUtilities.FIMAGE_READER);
+		VFSGroupDataset<FImage> images = new VFSGroupDataset<FImage>("/Users/vlad/Projects/uni/cv/groupf/training", ImageUtilities.FIMAGE_READER);
 
 		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 15, false);
 
@@ -78,7 +78,7 @@ public class Run3Combination implements Run {
 		//Main.run(r3, "zip:/Users/Tom/Desktop/training.zip");
 	}
 	
-	private NaiveBayesAnnotator<FImage, String> ann;
+	private LiblinearAnnotator<FImage, String> ann;
 
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
 
@@ -93,8 +93,8 @@ public class Run3Combination implements Run {
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
 		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
 		
+		ann = new LiblinearAnnotator<FImage, String>(extractor, Mode.MULTICLASS, SolverType.L2R_L2LOSS_SVC_DUAL, 1.0, 0.00001);	
 		
-		ann = new NaiveBayesAnnotator<FImage, String>(extractor,NaiveBayesAnnotator.Mode.MAXIMUM_LIKELIHOOD);
 		System.out.println("Start training");
 		ann.train(trainingSet);
 		System.out.println("Train done");
