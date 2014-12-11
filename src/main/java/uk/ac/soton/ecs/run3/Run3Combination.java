@@ -55,44 +55,14 @@ import uk.ac.soton.ecs.Run;
 
 public class Run3Combination implements Run {
 	
-	public static void main(String[] args) throws Exception{
-		
-		VFSGroupDataset<FImage> images = new VFSGroupDataset<FImage>("/Users/Tom/Desktop/training/", ImageUtilities.FIMAGE_READER);
-
-		GroupedDataset<String, ListDataset<FImage>, FImage> data = GroupSampler.sample(images, 15, false);
-
-		GroupedRandomSplitter<String, FImage> splits = new GroupedRandomSplitter<String, FImage>(
-				data, 4, 0, 4);
-		
-		Run3Combination r3 = new Run3Combination();
-		r3.train(splits.getTrainingDataset());
-		
-		ClassificationEvaluator<CMResult<String>, String, FImage> eval = 
-				new ClassificationEvaluator<CMResult<String>, String, FImage>(
-					r3, splits.getTestDataset(), new CMAnalyser<FImage, String>(CMAnalyser.Strategy.SINGLE));
-					
-	Map<FImage, ClassificationResult<String>> guesses = eval.evaluate();
-	CMResult<String> result = eval.analyse(guesses);
-	System.out.println(result.getDetailReport());
-		//Run3 r3 = new Run3();
-		//Main.run(r3, "zip:/Users/Tom/Desktop/training.zip");
-	}
-	
 	private NaiveBayesAnnotator<FImage, String> ann;
 
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-
-			
 		DenseSIFT dsift = new DenseSIFT(5, 5);
-		PyramidDenseSIFT<FImage> pdsift = new PyramidDenseSIFT<FImage>(
-				dsift, 6f, 7);
-		
-		
-		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, pdsift);
+		HardAssigner<byte[], float[], IntFloatPair> assigner = trainQuantiser(trainingSet, dsift);
 		
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
-		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(pdsift, assigner));
-		
+		FeatureExtractor<DoubleFV, FImage> extractor = hkm.createWrappedExtractor(new PHOWExtractor(dsift, assigner));
 		
 		ann = new NaiveBayesAnnotator<FImage, String>(extractor,NaiveBayesAnnotator.Mode.MAXIMUM_LIKELIHOOD);
 		System.out.println("Start training");
@@ -109,23 +79,22 @@ public class Run3Combination implements Run {
 	}
 	
 	
-	static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(Dataset<FImage> sample, PyramidDenseSIFT<FImage> pdsift) {
+	static HardAssigner<byte[], float[], IntFloatPair> trainQuantiser(Dataset<FImage> sample, DenseSIFT pdsift) {
 		List<LocalFeatureList<ByteDSIFTKeypoint>> allkeys = new ArrayList<LocalFeatureList<ByteDSIFTKeypoint>>();
-
+        int prg = 0;
+        int total = sample.numInstances();
 		System.out.println("Sift train start");
 		for (FImage img : sample) {
-			System.out.println("image");
 			pdsift.analyseImage(img);
 			allkeys.add(pdsift.getByteKeypoints(0.005f));
+            System.err.print("\r " + (prg++) + " / " + total + "    ");
 		}
-		
+	    System.err.println("\r Sift train done 100%.");
+
 		Collections.shuffle(allkeys);
 		System.out.println("Sift train done");
 
-		if (allkeys.size() > 10000)
-			allkeys = allkeys.subList(0, 10000);
-
-		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(300);
+		ByteKMeans km = ByteKMeans.createKDTreeEnsemble(100);
 		DataSource<byte[]> datasource = new LocalFeatureListDataSource<ByteDSIFTKeypoint, byte[]>(allkeys);
 		System.out.println("Start cluster");
 		ByteCentroidsResult result = km.cluster(datasource);
@@ -136,11 +105,11 @@ public class Run3Combination implements Run {
 	
 	
 	class PHOWExtractor implements FeatureExtractor<DoubleFV, FImage> {
-	    PyramidDenseSIFT<FImage> pdsift;
+	    DenseSIFT pdsift;
 	    HardAssigner<byte[], float[], IntFloatPair> assigner;
 	    Gist<FImage> gist = new Gist<FImage>(256, 256);
 
-	    public PHOWExtractor(PyramidDenseSIFT<FImage> pdsift, HardAssigner<byte[], float[], IntFloatPair> assigner)
+	    public PHOWExtractor(DenseSIFT pdsift, HardAssigner<byte[], float[], IntFloatPair> assigner)
 	    {
 	        this.pdsift = pdsift;
 	        this.assigner = assigner;
@@ -154,7 +123,9 @@ public class Run3Combination implements Run {
 	        BlockSpatialAggregator<byte[], SparseIntFV> spatial = new BlockSpatialAggregator<byte[], SparseIntFV>(
 	                bovw, 4, 4);
 	        
-	        DoubleFV fv = spatial.aggregate(pdsift.getByteKeypoints(0.015f), image.getBounds()).normaliseFV();
+	        DoubleFV fv = spatial.aggregate(pdsift.getByteKeypoints(0.005f), image.getBounds()).normaliseFV();
+            gist.analyseImage(object);
+            fv = fv.concatenate(gist.getResponse().asDoubleFV());
 	        return fv;
 	    }
 	}
