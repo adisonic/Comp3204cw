@@ -86,7 +86,7 @@ public class GistVersion implements Run {
 	LiblinearAnnotator<FImage, String>  ann;
 	
 	public void train(GroupedDataset<String, ListDataset<FImage>, FImage> trainingSet) {
-		Gist<FImage> gist = new Gist<FImage>(300, 300);
+		Gist<FImage> gist = new Gist<FImage>(256, 256);
 		
 		//Do we need this?
 		HomogeneousKernelMap hkm = new HomogeneousKernelMap(KernelType.Chi2, WindowType.Rectangular);
