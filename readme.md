@@ -1,7 +1,8 @@
-This project can be compile either using Maven directly or the Makefile provided.
+This project can be compiled either using Maven directly or the Makefile provided.
 
-Run class:   ecs.Main
-Arguments:  <run-id> <training-path> [<test-path> [quiet]]
+Run class:   `ecs.Main`
+
+Arguments:  `<run-id> <training-path> [<test-path> [quiet]]`
 
 Evaluate
 ========
@@ -21,11 +22,11 @@ with predicted classes, run:
 
     ecs.Main <run-id> <training-path> <test-path> [quiet]
 
-    The quiet parameter is optioanl. If given, it outputs the progress of predictions
+    The quiet parameter is optional. If given, it outputs the progress of predictions
     on standard error. Non-quiet version best used with output redirection in the command line.
 
-Valid <run-id>
-==============
+Valid `<run-id>`
+================
 
 - run1
 - run2
